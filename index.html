@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Scanner ke Tabel</title>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f6f8;
+      color: #222;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 16px;
+      margin: 14px 0;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    #reader {
+      width: 100%;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 15px;
+      cursor: pointer;
+      margin: 4px 4px 4px 0;
+      background: #2563eb;
+      color: white;
+    }
+
+    button.secondary {
+      background: #475569;
+    }
+
+    button.danger {
+      background: #dc2626;
+    }
+
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 15px;
+      margin-top: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+
+    th, td {
+      border-bottom: 1px solid #e2e8f0;
+      padding: 10px 8px;
+      text-align: left;
+      word-break: break-word;
+    }
+
+    th {
+      background: #f8fafc;
+    }
+
+    .status {
+      font-size: 14px;
+      color: #475569;
+      margin-top: 8px;
+    }
+
+    .small {
+      font-size: 13px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>QR / Barcode Scanner</h1>
+    <p class="small">Scan pakai kamera HP Android. Hasil scan otomatis masuk tabel di bawah.</p>
+
+    <div class="card">
+      <div id="reader"></div>
+      <div class="status" id="status">Tekan tombol mulai scan.</div>
+      <button onclick="startScanner()">Mulai Scan</button>
+      <button class="secondary" onclick="stopScanner()">Stop Scan</button>
+    </div>
+
+    <div class="card">
+      <strong>Input Manual</strong>
+      <input id="manualInput" placeholder="Masukkan kode manual jika kamera bermasalah" />
+      <button onclick="addManual()">Tambah</button>
+    </div>
+
+    <div class="card">
+      <strong>Data Scan</strong>
+      <div>
+        <button onclick="exportCSV()">Export CSV</button>
+        <button class="danger" onclick="clearData()">Hapus Semua</button>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Waktu</th>
+            <th>Kode</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    let html5QrCode;
+    let isScanning = false;
+    let lastScanned = "";
+    let lastScanTime = 0;
+
+    const STORAGE_KEY = "qr_scan_data";
+    let scanData = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(scanData));
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById("tableBody");
+      tbody.innerHTML = "";
+
+      scanData.forEach((item, index) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${item.time}</td>
+          <td>${escapeHtml(item.code)}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function addScan(code) {
+      const now = Date.now();
+
+      // Anti double-scan: kode sama tidak masuk lagi dalam 2 detik
+      if (code === lastScanned && now - lastScanTime < 2000) return;
+
+      lastScanned = code;
+      lastScanTime = now;
+
+      const item = {
+        time: new Date().toLocaleString("id-ID"),
+        code: code
+      };
+
+      scanData.unshift(item);
+      saveData();
+      renderTable();
+      document.getElementById("status").innerText = "Berhasil scan: " + code;
+    }
+
+    async function startScanner() {
+      if (isScanning) return;
+
+      html5QrCode = new Html5Qrcode("reader");
+
+      try {
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 }
+          },
+          decodedText => {
+            addScan(decodedText);
+          },
+          errorMessage => {}
+        );
+
+        isScanning = true;
+        document.getElementById("status").innerText = "Scanner aktif. Arahkan kamera ke QR/barcode.";
+      } catch (err) {
+        document.getElementById("status").innerText = "Gagal membuka kamera. Pastikan izin kamera aktif dan buka lewat HTTPS.";
+      }
+    }
+
+    async function stopScanner() {
+      if (!html5QrCode || !isScanning) return;
+
+      await html5QrCode.stop();
+      html5QrCode.clear();
+      isScanning = false;
+      document.getElementById("status").innerText = "Scanner dihentikan.";
+    }
+
+    function addManual() {
+      const input = document.getElementById("manualInput");
+      const value = input.value.trim();
+      if (!value) return;
+
+      addScan(value);
+      input.value = "";
+    }
+
+    function exportCSV() {
+      const rows = [["No", "Waktu", "Kode"]];
+
+      scanData.forEach((item, index) => {
+        rows.push([index + 1, item.time, item.code]);
+      });
+
+      const csv = rows.map(row =>
+        row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(",")
+      ).join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "data-scan.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function clearData() {
+      if (!confirm("Yakin hapus semua data scan?")) return;
+      scanData = [];
+      saveData();
+      renderTable();
+    }
+
+    renderTable();
+  </script>
+</body>
+</html>
