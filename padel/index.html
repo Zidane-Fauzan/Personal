@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Padel Match Randomizer</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="container">
+    <section class="hero">
+      <p class="eyebrow">Padel for 6 Players</p>
+      <h1>Random Tim & Jadwal Match</h1>
+      <p>Masukkan 6 pemain, random jadi 3 tim, lalu semua tim saling lawan dan skor bisa dicatat.</p>
+    </section>
+
+    <section class="card">
+      <div class="section-header">
+        <h2>1. Daftar Pemain</h2>
+        <button id="fillDemoBtn" type="button" class="ghost-btn">Isi contoh</button>
+      </div>
+      <div class="players-grid">
+        <input id="player1" type="text" placeholder="Pemain 1" autocomplete="off" />
+        <input id="player2" type="text" placeholder="Pemain 2" autocomplete="off" />
+        <input id="player3" type="text" placeholder="Pemain 3" autocomplete="off" />
+        <input id="player4" type="text" placeholder="Pemain 4" autocomplete="off" />
+        <input id="player5" type="text" placeholder="Pemain 5" autocomplete="off" />
+        <input id="player6" type="text" placeholder="Pemain 6" autocomplete="off" />
+      </div>
+      <div class="actions">
+        <button id="generateBtn" type="button">Random Tim & Match</button>
+        <button id="clearBtn" type="button" class="danger-btn">Reset</button>
+      </div>
+      <p id="message" class="message" aria-live="polite"></p>
+    </section>
+
+    <section id="teamsSection" class="card hidden">
+      <h2>2. Tim Random</h2>
+      <div id="teamsList" class="teams-grid"></div>
+    </section>
+
+    <section id="matchesSection" class="card hidden">
+      <h2>3. Match & Input Skor</h2>
+      <div id="matchesList" class="matches-list"></div>
+    </section>
+
+    <section id="standingsSection" class="card hidden">
+      <h2>4. Klasemen</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Tim</th>
+              <th>Main</th>
+              <th>Menang</th>
+              <th>Kalah</th>
+              <th>Poin</th>
+              <th>Skor</th>
+              <th>Selisih</th>
+            </tr>
+          </thead>
+          <tbody id="standingsBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
